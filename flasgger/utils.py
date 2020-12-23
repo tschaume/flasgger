@@ -20,9 +20,15 @@ from flask import current_app
 from flask import request
 from flask.views import MethodView
 
-from .constants import OPTIONAL_FIELDS
+try:
+    from flask_mongorest import methods as fmr_methods
+except ImportError:
+    fmr_methods = None
+
+from .constants import OPTIONAL_FIELDS, DEFAULT_FIELDS
 from .marshmallow_apispec import SwaggerView
 from .marshmallow_apispec import convert_schemas
+from .marshmallow_apispec import Schema
 
 
 def merge_specs(target, source):
@@ -80,10 +86,22 @@ def get_specs(rules, ignore_verbs, optional_fields, sanitizer, doc_dir=None):
                 if verb in endpoint.methods:
                     methods[verb.lower()] = endpoint
             elif getattr(endpoint, 'methods', None) is not None:
-                if verb in endpoint.methods:
-                    verb = verb.lower()
-                    if hasattr(endpoint.view_class, verb):
+                if isinstance(endpoint.methods, set):
+                    if verb in endpoint.methods:
+                        verb = verb.lower()
                         methods[verb] = getattr(endpoint.view_class, verb)
+                elif fmr_methods is not None:  # flask-mongorest
+                    endpoint_methods = set(m.method for m in endpoint.methods)
+                    if verb in endpoint_methods:
+                        proxy_verb = rule.endpoint.replace(
+                            endpoint.__name__, ''
+                        )
+                        if proxy_verb:
+                            methods[verb.lower()] = getattr(
+                                fmr_methods, proxy_verb
+                            )
+                else:
+                    raise TypeError
             else:
                 methods[verb.lower()] = endpoint
 
@@ -920,3 +938,77 @@ class CachedLazyString(LazyString):
         if not self._cache:
             self._cache = self.text_type(self._func())
         return self._cache
+
+
+def swag_annotation(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+
+        if not kwargs.pop("swag", False):
+            return f(*args, **kwargs)
+
+        function = args[2]
+
+        specs = {}
+        for key, value in DEFAULT_FIELDS.items():
+            specs[key] = kwargs.pop(key, value)
+
+        for variable, annotation in function.__annotations__.items():
+
+            if issubclass(annotation, Schema):
+                annotation = annotation()
+                data = annotation.to_specs_dict()
+
+                for row in data["parameters"]:
+                    specs["parameters"].append(row)
+                specs["definitions"].update(data["definitions"])
+
+                function = validate_annotation(annotation, variable)(function)
+
+            elif issubclass(annotation, int):
+                specs["parameters"].append({"name": variable,
+                                            "in": "path",
+                                            "type": "integer",
+                                            "required": True})
+
+            elif issubclass(annotation, str):
+                specs["parameters"].append({"name": variable,
+                                            "in": "path",
+                                            "type": "string",
+                                            "required": True})
+
+        function.specs_dict = specs
+        args = list(args)
+        args[2] = function
+        args = tuple(args)
+
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def validate_annotation(an, var):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+
+            if an.swag_validate:
+
+                payload = None
+
+                if an.swag_in == "query":
+                    payload = dict(request.args)
+
+                elif an.swag_in == "body" and request.is_json:
+                    payload = request.json
+
+                validate(
+                    payload,
+                    specs=an.to_specs_dict(),
+                    validation_function=an.swag_validation_function,
+                    validation_error_handler=an.swag_validation_error_handler,
+                    require_data=an.swag_require_data
+                )
+
+            return f(*args, **kwargs, **{var: payload})
+        return wrapper
+    return decorator
