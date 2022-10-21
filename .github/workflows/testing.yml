@@ -36,8 +36,6 @@ jobs:
         pip install -e etc/flasgger_package
         python setup.py check --strict
     - name: Test Client and build
-      env:
-        SSL_CERT_FILE: ${{ env.SSL_CERT_FILE }}
       run: |
         flake8 flasgger --ignore=F403
         py.test tests -s -vv --cov --cov-config=.coveragerc --doctest-modules flasgger
