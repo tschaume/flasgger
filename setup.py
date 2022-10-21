@@ -50,12 +50,32 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=[
-        'Flask>=0.10',
+        'Flask>=0.10,<2.3',
         'PyYAML>=3.0',
         'jsonschema>=3.0.1',
         'mistune',
-        'six>=1.10.0'
+        'six>=1.10.0',
+        'werkzeug',
     ],
+    extras_require={
+        'dev': [
+            'marshmallow',
+            'apispec>=1.0.0b5,<6',
+            'apispec-webframeworks',
+            'flask-restful',
+            'pep8',
+            'flake8',
+            'pytest>=4.6',
+            'flex',
+            'coveralls',
+            'pytest-cov',
+            'decorator',
+            'wheel',
+            'flask-jwt',
+            'readme_renderer',
+            'setuptools>=40.4.2',
+        ]
+    },
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
