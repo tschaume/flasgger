@@ -1,0 +1,62 @@
+name: testing
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: ${{ matrix.client-package }} (${{ matrix.os }}/py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        python-version: ['3.8', '3.9']
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        # pip-compile
+        pip install -r requirements.txt
+        # pip-compile --all-extras -o requirements-dev.txt
+        pip install -r requirements-dev.txt
+        pip install -e .
+        pip install -e etc/flasgger_package
+        python setup.py check --strict
+    - name: Test Client and build
+      env:
+        SSL_CERT_FILE: ${{ env.SSL_CERT_FILE }}
+      run: |
+        flake8 flasgger --ignore=F403
+        py.test tests -s -vv --cov --cov-config=.coveragerc --doctest-modules flasgger
+        python setup.py sdist bdist_wheel
+    - name: Publish distribution 📦s to Test PyPI
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        skip_existing: true
+        password: ${{ secrets.test_pypi_password }}
+        repository_url: https://test.pypi.org/legacy/
+
+  auto-gen-release:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.PAT }}
+    steps:
+      - uses: rymndhng/release-on-push-action@v0.20.0
+        with:
+          bump_version_scheme: norelease
