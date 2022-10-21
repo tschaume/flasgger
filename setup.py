@@ -9,6 +9,11 @@ if "+" in fallback_version:
     fallback_version = fallback_version.split("+")[0]
 
 
+def local_version(version):
+    # https://github.com/pypa/setuptools_scm/issues/342
+    return ""
+
+
 def fpath(name):
     return os.path.join(os.path.dirname(__file__), name)
 
@@ -17,8 +22,7 @@ def read(fname):
     return open(fpath(fname)).read()
 
 
-def desc():
-    return read('README.md')
+def desc(): return read('README.md')
 
 
 # grep flasgger/__init__.py since python 3.x cannot
@@ -94,6 +98,7 @@ setup(
         "write_to": "_version.py",
         "write_to_template": '__version__ = "{version}"',
         "fallback_version": fallback_version,
+        "local_scheme": local_version,
     },
     setup_requires=["setuptools_scm"],
 )
