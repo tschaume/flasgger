@@ -3,6 +3,15 @@ import re
 import os
 
 from setuptools import setup, find_packages
+from _version import __version__ as fallback_version
+
+if "+" in fallback_version:
+    fallback_version = fallback_version.split("+")[0]
+
+
+def local_version(version):
+    # https://github.com/pypa/setuptools_scm/issues/342
+    return ""
 
 
 def fpath(name):
@@ -13,8 +22,7 @@ def read(fname):
     return open(fpath(fname)).read()
 
 
-def desc():
-    return read('README.md')
+def desc(): return read('README.md')
 
 
 # grep flasgger/__init__.py since python 3.x cannot
@@ -30,7 +38,7 @@ def grep(attrname):
 
 setup(
     name='flasgger-tschaume',
-    version=grep('__version__'),
+    python_requires=">=3.8",
     url='https://github.com/tschaume/flasgger/',
     license='MIT',
     author=grep('__author__'),
@@ -43,8 +51,7 @@ setup(
             'tests', 'tests.*',
             'examples', 'examples.*',
             'demo_app', 'demo_app.*',
-            'etc', 'etc.*'
-        ]
+            'etc', 'etc.*' ]
     ),
     include_package_data=True,
     zip_safe=False,
@@ -79,11 +86,19 @@ setup(
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     entry_points={
         'flask.commands': [
             'generate-api-schema=flasgger.commands:generate_api_schema',
         ],
     },
+    use_scm_version={
+        "write_to": "_version.py",
+        "write_to_template": '__version__ = "{version}"',
+        "fallback_version": fallback_version,
+        "local_scheme": local_version,
+    },
+    setup_requires=["setuptools_scm"],
 )
