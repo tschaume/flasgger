@@ -32,9 +32,9 @@ using basic HTTP auth on some web-server you will have to.
 """
 
 
+import hmac
 from flask import Flask, jsonify, request
 from flask_jwt import JWT, jwt_required, current_identity, JWTError
-from werkzeug.security import safe_str_cmp
 from flasgger import Swagger
 
 
@@ -58,7 +58,9 @@ userid_table = {u.id: u for u in users}
 
 def authenticate(username, password):
     user = username_table.get(username, None)
-    if user and safe_str_cmp(user.password.encode('utf-8'), password.encode('utf-8')):
+    if user and hmac.compare_digest(
+        user.password.encode('utf-8'), password.encode('utf-8')
+    ):
         return user
 
 
@@ -77,21 +79,19 @@ app.config["SWAGGER"] = {
 app.config['JWT_AUTH_URL_RULE'] = '/api/auth'
 app.config['JWT_AUTH_HEADER_NAME'] = 'JWTAuthorization'
 
-swag = Swagger(app,
-    template={
-        "openapi": "3.0.0",
-        "info": {
-            "title": "Swagger Basic Auth App",
-            "version": "1.0",
-        },
-        "consumes": [
-            "application/x-www-form-urlencoded",
-        ],
-        "produces": [
-            "application/json",
-        ],
+swag = Swagger(app, template={
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Swagger Basic Auth App",
+        "version": "1.0",
     },
-)
+    "consumes": [
+        "application/x-www-form-urlencoded",
+    ],
+    "produces": [
+        "application/json",
+    ],
+})
 
 
 def jwt_request_handler():
@@ -155,7 +155,7 @@ def login():
         # add token to response headers - so SwaggerUI can use it
         resp.headers.extend({'jwt-token': access_token})
 
-    except Exception as e:
+    except Exception:
         resp = jsonify({"message": "Bad username and/or password"})
         resp.status_code = 401
 
