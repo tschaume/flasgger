@@ -29,9 +29,9 @@ def grep(attrname):
 
 
 setup(
-    name='flasgger',
+    name='flasgger-tschaume',
     version=grep('__version__'),
-    url='https://github.com/flasgger/flasgger/',
+    url='https://github.com/tschaume/flasgger/',
     license='MIT',
     author=grep('__author__'),
     author_email=grep('__email__'),

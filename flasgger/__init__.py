@@ -1,7 +1,7 @@
 
 __version__ = '0.9.5'
-__author__ = 'Zixuan Rao'
-__email__ = 'billrao@me.com'
+__author__ = 'Patrick Huck'
+__email__ = 'phuck@lbl.gov'
 
 # Based on works of Bruno Rocha and the Flasgger open source community
 
