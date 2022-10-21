@@ -55,6 +55,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.PAT }}
     steps:
-      - uses: rymndhng/release-on-push-action@v0.20.0
+      - uses: rymndhng/release-on-push-action@v0.25.0
         with:
+          max_commits: 25
           bump_version_scheme: norelease
