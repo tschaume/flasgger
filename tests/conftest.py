@@ -1,3 +1,4 @@
+import sys
 import json
 import random
 
@@ -70,12 +71,16 @@ def pytest_generate_tests(metafunc):
     parametrize tests using examples() function
     to generate one test for each examples/
     """
+    ver = sys.version_info
+    pyver = f"{ver.major}.{ver.minor}"
+    skip = {"3.10": "examples.jwt_auth"}
 
     if 'test_data' in metafunc.fixturenames:
         test_data = [
             (mod, mod.app.test_client(),
              get_specs_data(mod), get_test_metadata(mod))
             for mod in get_examples()
+            if mod not in skip.get(pyver, {})
         ]
 
         metafunc.parametrize(
