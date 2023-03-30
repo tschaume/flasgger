@@ -15,8 +15,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
-        python-version: ['3.8', '3.9']
+        os: ['ubuntu-latest', 'macos-latest']
+        python-version: ['3.8', '3.9', '3.10']
     steps:
     - uses: actions/checkout@v2
       with:
@@ -28,10 +28,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        # pip-compile
-        pip install -r requirements.txt
-        # pip-compile --all-extras -o requirements-dev.txt
-        pip install -r requirements-dev.txt
+        pip install -r requirements/${{ matrix.os }}_py${{ matrix.python-version }}_extras.txt
         pip install -e .
         pip install -e etc/flasgger_package
         python setup.py check --strict
