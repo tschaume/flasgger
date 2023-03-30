@@ -543,10 +543,16 @@ def pathify(basenames, examples_dir="examples/"):  # pragma: no cover
 
 def get_examples(examples_dir="examples/"):  # pragma: no cover
     """All example modules"""
+    ver = sys.version_info
+    pyver = f"{ver.major}.{ver.minor}"
+    skip = {"3.10": ["examples.jwt_auth"]}
     all_files = os.listdir(examples_dir)
     python_files = [f for f in all_files if is_python_file(f)]
     basenames = [remove_suffix(f) for f in python_files]
-    modules = [import_module(module) for module in pathify(basenames)]
+    modules = [
+        import_module(module) for module in pathify(basenames)
+        if module not in skip.get(pyver, [])
+    ]
     return [
         module for module in modules
         if getattr(module, 'app', None) is not None
