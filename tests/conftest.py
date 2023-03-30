@@ -74,6 +74,7 @@ def pytest_generate_tests(metafunc):
     ver = sys.version_info
     pyver = f"{ver.major}.{ver.minor}"
     skip = {"3.10": "examples.jwt_auth"}
+    print(pyver)
 
     if 'test_data' in metafunc.fixturenames:
         test_data = [
@@ -82,6 +83,7 @@ def pytest_generate_tests(metafunc):
             for mod in get_examples()
             if mod not in skip.get(pyver, {})
         ]
+        print(test_data)
 
         metafunc.parametrize(
             'test_data',
